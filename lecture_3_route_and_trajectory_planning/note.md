@@ -203,26 +203,25 @@ sample implementation
 - 两种坐标系换算关系
   - Cartesian -> Frenet $\mathbf{P}$ -> ($s^* $, l)
   - Frenet -> Cartesian $\mathbf{P} = \mathbf{r}(s) + l \cdot \mathbf{N}(s)$
-  
-   1）找参考线到自车质心P最近的点$ s^* $
 
-即为需要求解 $ s^* $ 使得：
+1）找参考线到自车质心P最近的点$ s^* $
 
-距离 $ |\mathbf{P} - \mathbf{r}(s^*)| $ 最小化，且投影是正交的，即 $ (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0 $. 参考路径是一个已知的光滑参数化曲线 $ \mathbf{r}(s) = (x(s), y(s)) $. 数学上可以表述为求解以下方程：
+即为需要求解 $s^*$ 使得距离 $|\mathbf{P} - \mathbf{r}(s^*)|$ 最小化，且投影是正交的，即 $(\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0$. 参考路径是一个已知的光滑参数化曲线 $\mathbf{r}(s) = (x(s), y(s))$. 数学上可以表述为求解以下方程：
 $$f(s) = (\mathbf{P} - \mathbf{r}(s)) \cdot \mathbf{T}(s) = 0$$
-以上为非线性方程，需要数值方法求解。例如牛顿法（Newton's method）：迭代 $ s_{n+1} = s_n - \frac{f(s_n)}{f'(s_n)} $. 
+以上为非线性方程，需要数值方法求解。例如牛顿法（Newton's method）：迭代 $s_{n+1} = s_n - \frac{f(s_n)}{f'(s_n)}$. 
 
-$ \frac{d}{ds}(\mathbf{P} - \mathbf{r}(s)) = - \frac{d\mathbf{r}(s)}{ds} = - \mathbf{T}(s) $。
-又切向量 $ \mathbf{T}(s) $ 的导数为：$\frac{d\mathbf{T}(s)}{ds} = \kappa(s) \mathbf{N}(s)$
+$\frac{d}{ds}(\mathbf{P} - \mathbf{r}(s)) = - \frac{d\mathbf{r}(s)}{ds} = - \mathbf{T}(s)$。
+又切向量 $\mathbf{T}(s) $ 的导数为：$\frac{d\mathbf{T}(s)}{ds} = \kappa(s) \mathbf{N}(s)$
 
-==> $ f'(s) = - \mathbf{T}(s) \cdot \mathbf{T}(s) + (\mathbf{P} - \mathbf{r}(s)) \cdot \frac{d\mathbf{T}(s)}{ds} = -1 + (\mathbf{P} - \mathbf{r}(s)) \cdot \kappa(s) \mathbf{N}(s) $.  求解后， $s^*$ 即为Frenet坐标中的第一个分量。
+=> $ f'(s) = - \mathbf{T}(s) \cdot \mathbf{T}(s) + (\mathbf{P} - \mathbf{r}(s)) \cdot \frac{d\mathbf{T}(s)}{ds} = -1 + (\mathbf{P} - \mathbf{r}(s)) \cdot \kappa(s) \mathbf{N}(s)$.  求解后， $s^*$ 即为Frenet坐标中的第一个分量。
 
-    2）求偏移l
+  2）求偏移l
 一旦找到 $ s^* $，偏移 $ l $ 是 $ P $ 到投影点 $ \mathbf{r}(s^*) $ 的有符号距离：
 $$l = |\mathbf{P} - \mathbf{r}(s^*)| \cdot \operatorname{sign} \left( (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{N}(s^*) \right)$$
 
 $ |\mathbf{P} - \mathbf{r}(s^*)| $ 是欧氏距离。
-符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。
+符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。  
+
 <details>
 <summary>python code </summary>
 
