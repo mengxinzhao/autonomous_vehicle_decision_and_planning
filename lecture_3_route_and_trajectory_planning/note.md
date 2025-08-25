@@ -2,7 +2,7 @@
 ###  Mission planning
 - 功能： start position， goal， lane graph + cost function ==> route planning ==> Route(sequence of lanes / road segments)
 - cost function： could penalize lane changes， turns（left / right）， narrow lanes etc
-- 经典算法
+#### 经典基于搜索算法
   - Dijkstra算法原理 single source shorted path。[算法图解](https://www.freecodecamp.org/chinese/news/dijkstras-shortest-path-algorithm-visual-introduction/)
   - A* 用启发式算法 f(n) = g(n) + h(n). where n is the next node on the path, g(n) is the cost of the path from the start node to n, and h(n) is a heuristic function that estimates the cost of the cheapest path from n to the goal. The heuristic function is problem-specific. If the heuristic function is admissible – meaning that it never overestimates the actual cost to get to the goal – A* is guaranteed to return a least-cost path from start to goal. 缺点：不满足运动学约束，难以做路径追踪
   - Hybrid A*： 改进A*难点。节点的拓展基于车辆运动学模型，cost计算基于grid map。 论文：
@@ -24,8 +24,6 @@ solution via the second phase of our algorithmm (which usesg radient descent to 
         - [nav2 (ROS2)](https://github.com/ros-navigation/navigation2/tree/main/nav2_smac_planner) by Samsung North America research
         - [Unity](https://github.com/Habrador/Self-driving-vehicle)
         - [Python](https://github.com/zhm-real/MotionPlanning)
-
-
 
 <details>
 <summary>Dijkstra algorithm</summary>
@@ -56,7 +54,7 @@ solution via the second phase of our algorithmm (which usesg radient descent to 
 23      return (dist, prev)
 
 ```
-```block
+```c++
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -193,3 +191,90 @@ sample implementation
 - https://github.com/JDSherbert/A-Star-Pathfinding
 - https://rosettacode.org/wiki/A*_search_algorithm#C++
 </details>
+
+#### 经典基于采样算法
+- Cartesian 坐标系 x, y, $\theta_x$, $\kappa_x$, v, a， 横纵坐标， 航向角，曲率， 速度，加速度
+- Frenet frame: The Frenet frame is defined relative to the reference path using two coordinates.
+  - T (Tangent vector): Points in the direction of the reference path. $ |\mathbf{T}(s)| = 1 $
+  - N (Normal vector): Points perpendicularly to the path, toward the center of curvature.
+  - B (Binormal vector): A third axis for 3D applications, which is the cross-product of the tangent and normal vectors. 
+  - 坐标系 S-L(S-t) s, $\dot{s}$, $\ddot{s}$, l, $l'$, $l''$。 纵向位移，纵向速度（对时间），纵向加速度（对时间），横向位移，横向速度（对纵向s导数），横向加速度（对纵向s导数）。坐标相对的是reference path
+  - 不错的[visualization](https://github.com/fjp/frenet/blob/master/README.md)。frenet frame缺陷：当本身reference path 本身非常大的是时候（SF lombart street），当把运动投影到汽车本身(x,y)坐标系下，曲率仍然很大，controller 仍然难以跟踪参考轨迹。优点：中低曲率的reference path
+- 两种坐标系换算关系
+  - Cartesian -> Frenet $\mathbf{P}$ -> ($s^* $, l)
+  - Frenet -> Cartesian $\mathbf{P} = \mathbf{r}(s) + l \cdot \mathbf{N}(s)$
+  
+   1）找参考线到自车质心P最近的点$ s^* $
+
+即为需要求解 $ s^* $ 使得：
+
+距离 $ |\mathbf{P} - \mathbf{r}(s^*)| $ 最小化，且投影是正交的，即 $ (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0 $. 参考路径是一个已知的光滑参数化曲线 $ \mathbf{r}(s) = (x(s), y(s)) $. 数学上可以表述为求解以下方程：
+$$f(s) = (\mathbf{P} - \mathbf{r}(s)) \cdot \mathbf{T}(s) = 0$$
+以上为非线性方程，需要数值方法求解。例如牛顿法（Newton's method）：迭代 $ s_{n+1} = s_n - \frac{f(s_n)}{f'(s_n)} $. 
+
+$ \frac{d}{ds}(\mathbf{P} - \mathbf{r}(s)) = - \frac{d\mathbf{r}(s)}{ds} = - \mathbf{T}(s) $。
+又切向量 $ \mathbf{T}(s) $ 的导数为：$\frac{d\mathbf{T}(s)}{ds} = \kappa(s) \mathbf{N}(s)$
+
+==> $ f'(s) = - \mathbf{T}(s) \cdot \mathbf{T}(s) + (\mathbf{P} - \mathbf{r}(s)) \cdot \frac{d\mathbf{T}(s)}{ds} = -1 + (\mathbf{P} - \mathbf{r}(s)) \cdot \kappa(s) \mathbf{N}(s) $.  求解后， $s^*$ 即为Frenet坐标中的第一个分量。
+
+    2）求偏移l
+一旦找到 $ s^* $，偏移 $ l $ 是 $ P $ 到投影点 $ \mathbf{r}(s^*) $ 的有符号距离：
+$$l = |\mathbf{P} - \mathbf{r}(s^*)| \cdot \operatorname{sign} \left( (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{N}(s^*) \right)$$
+
+$ |\mathbf{P} - \mathbf{r}(s^*)| $ 是欧氏距离。
+符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。
+<details>
+<summary>python code </summary>
+
+```python
+import numpy as np
+from scipy.optimize import fsolve
+
+# reference path r(s) = [s * cos(s), s * sin(s)]
+def r(s):
+    return np.array([s * np.cos(s), s * np.sin(s)])
+
+def T(s):  
+    # Tangent vector
+    ds = 1e-6
+    dr_ds = (r(s + ds) - r(s - ds)) / (2 * ds)
+    return dr_ds / np.linalg.norm(dr_ds)
+
+def f(s, P):
+    # s is passed in as array
+    if isinstance(s, np.ndarray):
+        s = s[0]
+    return np.dot(P - r(s), T(s))
+
+def N(s):
+    T_s = T(s)
+    # normal vector N = 90 degree rotation of T
+    return np.array([-T_s[1], T_s[0]])  
+
+# Ego position
+P = np.array([1.0, 1.0])
+s_guess = 0.0 
+s_star = fsolve(f, s_guess, args=(P,))[0]
+
+
+T_star = T(s_star)
+# # normal vector N = 90 degree rotation of T
+N_star = N(s_star)
+offset_vec = P - r(s_star)
+l = np.linalg.norm(offset_vec) * np.sign(np.dot(offset_vec, N_star))
+
+print(f"Frenet s = {s_star:.3f}, l = {l:.3f}")
+
+def frenet_to_cartesian(s, l):
+    r_s = r(s)
+    N_s = N(s)
+    P = r_s + l * N_s
+    return P
+
+P = frenet_to_cartesian(s_star, l)
+print(f"{P=}"
+
+```
+
+</details>
+
