@@ -204,12 +204,12 @@ sample implementation
   - Cartesian -> Frenet $\mathbf{P}$ -> ($s^* $, l)
   - Frenet -> Cartesian $\mathbf{P} = \mathbf{r}(s) + l \cdot \mathbf{N}(s)$
 
-1）找参考线到自车质心P最近的点 s_star
-
 ![推导](./math_frenet_to_cartesian.png)
 
 <details>
 <summary>推导 </summary>
+
+1）找参考线到自车质心P最近的点 $ s^* $
 
 即为需要求解 $ s^* $ 使得距离 $|\mathbf{P} - \mathbf{r}(s^*)|$ 最小化，且投影是正交的，即 $(\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0$. 参考路径是一个已知的光滑参数化曲线 $\mathbf{r}(s) = (x(s), y(s))$. 数学上可以表述为求解以下方程：
 $$f(s) = (\mathbf{P} - \mathbf{r}(s)) \cdot \mathbf{T}(s) = 0$$
@@ -220,7 +220,7 @@ $\frac{d}{ds}(\mathbf{P} - \mathbf{r}(s)) = - \frac{d\mathbf{r}(s)}{ds} = - \mat
 
 => $ f'(s) = - \mathbf{T}(s) \cdot \mathbf{T}(s) + (\mathbf{P} - \mathbf{r}(s)) \cdot \frac{d\mathbf{T}(s)}{ds} = -1 + (\mathbf{P} - \mathbf{r}(s)) \cdot \kappa(s) \mathbf{N}(s)$.  求解后， $s^*$ 即为Frenet坐标中的第一个分量。
 
-  2）求偏移l
+2）求偏移l
 一旦找到 $ s^* $，偏移 $ l $ 是 $ P $ 到投影点 $ \mathbf{r}(s^*) $ 的有符号距离：
 $$l = |\mathbf{P} - \mathbf{r}(s^*)| \cdot \operatorname{sign} \left( (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{N}(s^*) \right)$$
 
