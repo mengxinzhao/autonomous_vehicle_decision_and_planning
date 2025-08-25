@@ -204,9 +204,14 @@ sample implementation
   - Cartesian -> Frenet $\mathbf{P}$ -> ($s^* $, l)
   - Frenet -> Cartesian $\mathbf{P} = \mathbf{r}(s) + l \cdot \mathbf{N}(s)$
 
-1）找参考线到自车质心P最近的点$ s^* $
+1）找参考线到自车质心P最近的点 s_star
 
-即为需要求解 $s^* $ 使得距离 $|\mathbf{P} - \mathbf{r}(s^*)|$ 最小化，且投影是正交的，即 $(\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0$. 参考路径是一个已知的光滑参数化曲线 $\mathbf{r}(s) = (x(s), y(s))$. 数学上可以表述为求解以下方程：
+![推导](./math_frenet_to_cartesian.png)
+
+<details>
+<summary>推导 </summary>
+
+即为需要求解 $ s^* $ 使得距离 $|\mathbf{P} - \mathbf{r}(s^*)|$ 最小化，且投影是正交的，即 $(\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{T}(s^*) = 0$. 参考路径是一个已知的光滑参数化曲线 $\mathbf{r}(s) = (x(s), y(s))$. 数学上可以表述为求解以下方程：
 $$f(s) = (\mathbf{P} - \mathbf{r}(s)) \cdot \mathbf{T}(s) = 0$$
 以上为非线性方程，需要数值方法求解。例如牛顿法（Newton's method）：迭代 $s_{n+1} = s_n - \frac{f(s_n)}{f'(s_n)}$. 
 
@@ -220,7 +225,9 @@ $\frac{d}{ds}(\mathbf{P} - \mathbf{r}(s)) = - \frac{d\mathbf{r}(s)}{ds} = - \mat
 $$l = |\mathbf{P} - \mathbf{r}(s^*)| \cdot \operatorname{sign} \left( (\mathbf{P} - \mathbf{r}(s^*)) \cdot \mathbf{N}(s^*) \right)$$
 
 $ |\mathbf{P} - \mathbf{r}(s^*)| $ 是欧氏距离。
-符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。  
+符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。 
+</details>
+
 
 <details>
 <summary>python code </summary>
@@ -276,4 +283,6 @@ print(f"{P=}"
 ```
 
 </details>
+
+
 
