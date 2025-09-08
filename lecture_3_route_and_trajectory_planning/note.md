@@ -228,6 +228,53 @@ $ |\mathbf{P} - \mathbf{r}(s^*)| $ 是欧氏距离。
 符号由点积决定：正值表示在法向量一侧（例如路径“右侧”），负值表示另一侧。法向量的方向需预定义（例如，始终指向曲率的内侧或固定侧）。 
 </details>
 
+#### 论文：OptimalTrajectoryGenerationforDynamicStreetScenariosinaFrenetFrame.pdf
+
+##### 问题framing
+frenent frame 下的trajectory
+$$
+\overrightarrow{x}(s(t), d(t)) = \overrightarrow{r}(s(t)) + d(t)\overrightarrow{n_r}(s(t))
+$$
+s 弧长，${n_r}$法向量，$r(s(t))$ 论文解释：root point r along the center line。 应该解释为在reference line上的规划起始点？
+
+2. 事实（证明在别处？）5项多项式是jerk-optimal connection最优解  we also know that quintic polynomials
+are the jerk-optimal connection between a start state $P0 = [p0,\dot{p}0,\ddot{p}0]$ and an endstate $P1 =[p1,\dot{p}1, \ddot{p}1]$ with in the time interval $T := t1 − t0$ in a one-dimensional problem.  They minimize the cost functional given by the time integral of the square of jerk $J_t(p(t)) := \int_{t_0}^{t_1} \dddot{p}^2(\tau) \, d\tau.$
+
+##### 解决方法
+- 知道5次多项式之后 就可以找一个cost function，以此求最优解， 而且这个解满足Bellman 最优公式
+![proposition 1](./proposition.png)
+###### high speed lateral trajectory: 论文认为 $d(t)$, $s(t)$ 可以分开算
+
+1). 初始条件从之前算出的trajectory里 找 $D0 = [d_0, \dot{d}_0, \ddot{d}_0]$.
+
+2). 终止条件 $\dot{p}1 = \ddot{p}1= 0$
+
+3). cost $g(T) = T$,  $h(d1) = d_1^2$,
+$$
+C_d = k_j J_t(d(t)) + k_t T + k_d d_1^2
+$$
+
+4). 快速计算时用。 By combining different end conditions $d_i$ and $T_j$, $[d_1, \dot{d}_1, \ddot{d}_1, T]_{ij} = [d_i, 0, 0, T_j]$ for the polynomials at simulation time t = 0, all possible maneuvers are sufficiently covered. In the second step we pick the valid trajectory with the lowest cost. Notice that, as we continue in each step along the optimal trajectory.
+
+##### low speed lateral trajectory
+
+这是如果还是分开算 就会出现invalid curvature， 不符合车辆动力学的问题。 此时 trajectory 的横向不是简单的用$d(t)\overrightarrow{n_r}(s(t))$ 而是用$d(s(t))\overrightarrow{n_r}(s(t))$ 算横向相对于每单位纵向位移的矢量。cost function ![cost_function](./cost_function_for_low_speed.png). 快速计算时，用对时间的导数而不是arch s。 The set generation can then carried analogously out to $d(t)$ with the start point $D0 = [d_0, d'_0, d''_0]$ and the various end points
+$[d_1, d'_1, d''_1, T]_{ij} = [d_i, 0, 0, T_j]$ 
+
+#### longtitdinal trajectory
+论文中 基本上是用target position(t) 生成大量可能的end point 数据，然后仍然用cost function 去找最小代价trajectory 上面分成
+- following 用constant time gap 计算$S(target)$ 和idm 类似 需要环境信息
+- merging/stopping 
+- velocity keeping （没有lead vehicle）
+
+#### combine lat + lon 
+- drop trajectory outsideof accel limit
+- 计算orientation curvature drop trajectory excedding maximum turn radius
+- 最后 $C_{tot} = k_{lat} C_{lat} + k_{lon} C_{lon} $, k 是weight
+- collision check： 论文说不加proximity penality 而是The collision-checked contour is continuously expanded a little bit towards the time horizon, so obstacles of any kind seem to continuously back off as we get close？ 没懂？
+- 当行为变化 Every time we utilize a new reference as the center line, such as during initialization and lane changes, or when we switch between low and high speed trajectories, we have to project the current end point $(x, \theta_x, \kappa_x, v_x, a_x)(t_0)$ (笔误？ 是$t_1$? ) on the new center line and determine the corresponding  $[s, \dot{s}, \ddot{s}, l, l', l'']$
+
+
 
 <details>
 <summary>python code </summary>
